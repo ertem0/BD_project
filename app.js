@@ -1,9 +1,9 @@
 //imports
 const express = require("express")
-
-const app = express();
 const { Pool, Client } = require("pg");
 const credentials = require("./credentials.js");
+
+const app = express();
 
 async function poolDemo() {
     const pool = new Pool(credentials);
