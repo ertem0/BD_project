@@ -4,7 +4,8 @@ const jwt = require('jsonwebtoken');
 //definir as funcoes (VIEWS)
 module.exports = {
     login: async(req, res, next)=>{
-        return res.status(200).send()
+        const nome = req.body.nome;
+        return res.status(200).send(nome)
     },
     register: async(req, res, next)=>{
         return res.status(200).send()

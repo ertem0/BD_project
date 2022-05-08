@@ -2,6 +2,7 @@
 const express = require("express")
 const { Pool, Client } = require("pg");
 const credentials = require("./credentials.js");
+const bodyParser = require("body-parser");
 
 const app = express();
 
@@ -17,6 +18,8 @@ const app = express();
 //     const now = await poolDemo();
 //     console.log(now.rows[0].now);
 // })();
+
+app.use(bodyParser.json());
 
 const routes = require('./routes/routes.js'); 
 app.use('/', routes);
