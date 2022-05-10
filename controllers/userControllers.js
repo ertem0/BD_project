@@ -7,8 +7,29 @@ module.exports = {
     login: async(req, res)=>{
         const nome = req.body.name;
         const pass = req.body.password;
-
-        return res.status(200).json({nome: nome, password: pass})
+        pool.query('SELECT username FROM users WHERE username = $1',[nome], (error, result)=>{
+            if (error) {
+                
+                throw error
+            }
+            if(result.rows[0] === undefined){
+                return res.status(200).json({response: "user nao registado"})
+            }
+            else{
+                pool.query('SELECT password FROM users WHERE password = $1 AND username = $2',[pass, nome], (error, result)=>{
+                    if (error) {
+                
+                        throw error
+                    }
+                    if(result.rows[0] === undefined){
+                        return res.status(200).json({response: "password incorreta"})
+                    }
+                    else{
+                        return res.status(200).json({response: "logged in"})
+                    }
+                })
+            }
+        })
     },
 
 
