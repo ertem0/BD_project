@@ -2,8 +2,8 @@ const express = require("express");
 const jwt = require('jsonwebtoken');
 const pool  = require("../connection")
 
-module.exports{
+module.exports = {
     createCampanha: async(req, res)=>{
-        const description: 
+        
     }
 }
