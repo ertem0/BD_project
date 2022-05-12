@@ -106,10 +106,8 @@ module.exports = {
                                 })
                             });
         
-                        }
-                        const tokenheader = req.headers.authorization  
-                        //supostamente devia decodificar o token mas nao funciona
-                        const tokeninfo = jwt.verify(tokenheader, '123456')
+                        }  
+
                         //add a new vendedor to vendedor table
                         if(type === "vendedor"){
                             const morada = req.body.morada
