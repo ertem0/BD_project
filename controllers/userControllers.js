@@ -7,6 +7,7 @@ module.exports = {
     login: async(req, res)=>{
         const nome = req.body.name;
         const pass = req.body.password;
+        const user = {username: nome, password: pass}
         pool.query('SELECT username FROM users WHERE username = $1',[nome], (error, result)=>{
             if (error) {
                 
@@ -15,20 +16,22 @@ module.exports = {
             if(result.rows[0] === undefined){
                 return res.status(200).json({response: "user nao registado"})
             }
-            else{
-                pool.query('SELECT password FROM users WHERE password = $1 AND username = $2',[pass, nome], (error, result)=>{
-                    if (error) {
-                
-                        throw error
-                    }
-                    if(result.rows[0] === undefined){
-                        return res.status(200).json({response: "password incorreta"})
-                    }
-                    else{
-                        return res.status(200).json({response: "logged in"})
-                    }
-                })
-            }
+        
+            pool.query('SELECT password FROM users WHERE password = $1 AND username = $2',[pass, nome], (error, result)=>{
+                if (error) {
+            
+                    throw error
+                }
+                if(result.rows[0] === undefined){
+                    return res.status(200).json({response: "password incorreta"})
+                }
+                else{
+                    const token = jwt.sign(user, process.env.ACCESS_TOKEN)
+                    return res.status(200).json({response: "logged in", token: token})
+                    
+                }
+            })
+            
         })
     },
 
@@ -37,7 +40,7 @@ module.exports = {
         const type = req.body.type
         const nome = req.body.name
         const pass = req.body.password
-        
+        const user = {type: type, username: nome, password: pass}
 
         //gets the table where the username is
         pool.query('SELECT username FROM users WHERE username = $1',[nome], (error, result)=>{
@@ -62,16 +65,20 @@ module.exports = {
                     // get the values for the comprador
                     const morada = req.body.morada
                     const cartao = req.body.cartao
-                    const NIF = parseInt(req.body.NIF)
+                    const NIF = req.body.nif
+                    
                     //add comprador in comprador table
                     pool.query('INSERT INTO comprador (morada, cartao, users_username, nif) VALUES ($1, $2, $3, $4)',[morada,  cartao, nome,NIF], (error, result)=>{
 
                         if (error) {
                             throw error
                         }
-
+                        
+                        const accessToken = jwt.sign(user, '123456');
+                        
                         return res.status(200).json({
-                            response: "comprador added"
+                            response: "comprador added",
+                            access_token: accessToken
                         })
                     });
 
@@ -79,15 +86,16 @@ module.exports = {
                 //add a new vendedor to vendedor table
                 if(type === "vendedor"){
                     const morada = req.body.morada
-                    const NIF = parseInt(req.body.NIF) 
+                    const NIF = parseInt(req.body.nif) 
                     pool.query('INSERT INTO vendedor (morada, users_username, nif) VALUES ($1, $2, $3)',[morada,  nome,NIF], (error, result)=>{
 
                         if (error) {
                             throw error
                         }
-
+                        const accessToken = jwt.sign(user, '123456');
                         return res.status(200).json({
-                            response: "administrador added"
+                            response: "vendedor added",
+                            access_token: accessToken
                         })
                     });
                 }
@@ -98,9 +106,10 @@ module.exports = {
                         if (error) {
                             throw error
                         }
-
+                        const accessToken = jwt.sign(user, '123456');
                         return res.status(200).json({
-                            response: "administrador added"
+                            response: "administrador added",
+                            access_token: accessToken
                         })
                     });
                 }
