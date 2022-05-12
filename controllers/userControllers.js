@@ -18,21 +18,23 @@ module.exports = {
             if(result.rows[0] === undefined){
                 return res.status(200).json({response: "user nao registado"})
             }
-        
-            pool.query('SELECT password FROM users WHERE password = $1 AND username = $2',[pass, nome], (error, result)=>{
-                if (error) {
+            else{
+                pool.query('SELECT password FROM users WHERE password = $1 AND username = $2',[pass, nome], (error, result)=>{
+                    if (error) {
+                
+                        throw error
+                    }
+                    if(result.rows[0] === undefined){
+                        return res.status(200).json({response: "password incorreta"})
+                    }
+                    else{
+                        const token = jwt.sign(user, '123456')
+                        return res.status(200).json({response: "logged in", token: token})
+                        
+                    }
+                })
+            }
             
-                    throw error
-                }
-                if(result.rows[0] === undefined){
-                    return res.status(200).json({response: "password incorreta"})
-                }
-                else{
-                    const token = jwt.sign(user, '123456')
-                    return res.status(200).json({response: "logged in", token: token})
-                    
-                }
-            })
             
         })
     },
@@ -44,10 +46,19 @@ module.exports = {
         const pass = req.body.password
         const email = req.body.email
         const user = {username: nome, password: pass}
-        const tokenheader = req.headers.authorization
+        const tokenheader = req.headers.authorization  
         //supostamente devia decodificar o token mas nao funciona
-        //const tokeninfo = jwt.verify(tokenheader, '123456')
-
+        const tokeninfo = jwt.verify(tokenheader, '123456')
+        console.log(tokeninfo)
+        
+        await pool.query('SELECT users_username FROM administrador WHERE users_username = $1',[tokeninfo.username], async(error, result)=>{
+            if (error){
+                throw error
+            }
+            if(result.rows[0] === undefined && (type === "administrador" || type === "vendedor")){
+                return res.status(500).send()
+            }
+        }) 
         //gets the table where the username is
         await pool.query('SELECT username FROM users WHERE username = $1',[nome], async(error, result)=>{
             if (error) {
@@ -87,6 +98,9 @@ module.exports = {
                         });
     
                     }
+                    const tokenheader = req.headers.authorization  
+                    //supostamente devia decodificar o token mas nao funciona
+                    const tokeninfo = jwt.verify(tokenheader, '123456')
                     //add a new vendedor to vendedor table
                     if(type === "vendedor"){
                         const morada = req.body.morada
