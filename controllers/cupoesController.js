@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const pool  = require("../connection")
 
 module.exports{
-    createCampanha: async()=>{
-        
+    createCampanha: async(req, res)=>{
+        const description: 
     }
 }
