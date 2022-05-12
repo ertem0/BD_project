@@ -48,8 +48,12 @@ module.exports = {
         const user = {username: nome, password: pass}
         const tokenheader = req.headers.authorization  
         //supostamente devia decodificar o token mas nao funciona
-        const tokeninfo = jwt.verify(tokenheader, '123456')
+        let tokeninfo = {username:undefined}
+        if (tokenheader !== undefined){
+        tokeninfo = jwt.verify(tokenheader, '123456')
         console.log(tokeninfo)
+        }
+        
         
         
          pool.query('SELECT users_username FROM administrador WHERE users_username = $1',[tokeninfo.username], async(error, result)=>{
