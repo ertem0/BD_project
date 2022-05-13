@@ -10,34 +10,35 @@ module.exports = {
         const stock = parseInt(req.body.cupons)
         const produto_id = parseInt(req.body.produto_id)
         const tokenheader = req.headers.authorization
+
+        var id = 0
         tokeninfo = jwt.verify(tokenheader, '123456')
-        
-        await pool.query('SELECT users_username FROM administrador where users_username = $1',[tokeninfo.username], async(error, result)=>{
-            if(error){
-                throw error
-            }
+        try{
+            await pool.query('BEGIN')
+            let result =await pool.query('SELECT users_username FROM administrador where users_username = $1',[tokeninfo.username])
             if(result.rows[0] === undefined){
                 return res.status(500).send()
             }
-        })
 
-        await pool.query('SELECT MAX(campanha_id) FROM campanha', async(error, result)=>{
-            if(error){
-                throw error
-            }
-
+            result = await pool.query('SELECT MAX(campanha_id) FROM campanha') 
+                
             if(result.rows[0].max === null){
-                const id = 1
+                id = 1
             }
             else{
-                const id = result.rows[0].max + 1
+                id = 1 + parseInt(result.rows[0].max)
             }
-            pool.query('INSERT INTO campanha ()')
+            await pool.query('INSERT INTO campanha (campanha_id, inicio, fim, description, stock, produtos_produto_id, administrador_users_username) VALUES($1,$2,$3,$4,$5,$6,$7)',
+                [id, start, end, description, stock, produto_id, tokeninfo.username])
+            pool.query("COMMIT")
+            return res.status(200).send({resultado: "campanha created"})
             
-            return res.status(200).send()    
-        });
-
-
+            }
+        catch (e){
+            pool.query('ROLLBACK')
+            throw e
+        }
+        
 
         
     }
