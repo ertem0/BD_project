@@ -105,13 +105,8 @@ module.exports = {
                                 })
                             });
         
-<<<<<<< HEAD
                         }
                         
-=======
-                        }  
-
->>>>>>> bdcad60c7a2bd39641c1794035c98bd399247d9f
                         //add a new vendedor to vendedor table
                         if(type === "vendedor"){
                             const morada = req.body.morada
