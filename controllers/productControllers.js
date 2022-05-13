@@ -9,23 +9,19 @@ module.exports = {
         const quantidade= req.body.quantidade
         const cart=req.body.cart
         const produto_id = req.body.produto_id
-        console.log("starting")
         try {
-            console.log("entered try")
             await pool.query('BEGIN')
             console.log("started transaction")
             for (let i = 0; i < cart.length; i++) {
-                console.log("entered for")
                 let line
                 
-                await pool.query('update produtos −> set stock = stock - $1 where produto_id = $2;',[cart[i][1],cart[i][0]])
-                line = await pool.query('select stock from produtos where produto_id = $1',[cart[i][0]])
-                console.log(line)
-                if (line.rows[0].stock < 0) {
-                    console.log("ERROR")
+                await pool.query('update produtos set stock_produto = stock_produto - $1 where produto_id = $2;',[cart[i][1],cart[i][0]])
+                line = await pool.query('select stock_produto from produtos where produto_id = $1',[cart[i][0]])
+
+                if (line.rows[0].stock_produto < 0) {
                     throw new Error('Produto sem estoque')
                 }
-                console.log("OK")
+
             }
             await pool.query('COMMIT')
           } catch (e) {
