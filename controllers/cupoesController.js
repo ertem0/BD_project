@@ -32,7 +32,7 @@ module.exports = {
             else{
                 const id = result.rows[0].max + 1
             }
-            pool.query('SELECT ')
+            pool.query('INSERT INTO campanha ()')
             
             return res.status(200).send()    
         });
