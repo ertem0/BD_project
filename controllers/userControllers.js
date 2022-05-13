@@ -45,7 +45,6 @@ module.exports = {
         const nome = req.body.name
         const pass = req.body.password
         const email = req.body.email
-        const user = {username: nome, password: pass}
         const tokenheader = req.headers.authorization  
         //supostamente devia decodificar o token mas nao funciona
         let tokeninfo = {username:undefined}
@@ -98,16 +97,21 @@ module.exports = {
                                     throw error
                                 }
                                 
-                                const accessToken = jwt.sign(user, '123456');
+                                
                                 
                                 return res.status(200).json({
                                     response: "comprador added",
-                                    access_token: accessToken
+                                    
                                 })
                             });
         
+<<<<<<< HEAD
+                        }
+                        
+=======
                         }  
 
+>>>>>>> bdcad60c7a2bd39641c1794035c98bd399247d9f
                         //add a new vendedor to vendedor table
                         if(type === "vendedor"){
                             const morada = req.body.morada
@@ -119,10 +123,10 @@ module.exports = {
                                 if (error) {
                                     throw error
                                 }
-                                const accessToken = jwt.sign(user, '123456');
+                                
                                 return res.status(200).json({
                                     response: "vendedor added",
-                                    access_token: accessToken
+                                    
                                 })
                             });
                         }
@@ -133,10 +137,10 @@ module.exports = {
                                 if (error) {
                                     throw error
                                 }
-                                const accessToken = jwt.sign(user, '123456');
+                                
                                 return res.status(200).json({
                                     response: "administrador added",
-                                    access_token: accessToken
+                                    
                                 })
                             });
                         }
