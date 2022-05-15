@@ -11,7 +11,7 @@ router.route('/create_question').post(middlewares.authenticateToken, qandrcontro
 router.route('/campaign').post(cupoes.createCampanha)
 router.route('/cart').post(productcontrollers.cart);
 router.route('/add_product').post(productcontrollers.criar_novo_produto);
-
+router.route('/subscribe').put(cupoes.subscribe)
 
 module.exports = router;
 
