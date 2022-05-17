@@ -1,5 +1,7 @@
 const express = require("express");
 const jwt = require('jsonwebtoken');
+const { mutateExecOptions } = require("nodemon/lib/config/load");
+const { postgresMd5PasswordHash } = require("pg/lib/utils");
 const pool  = require("../connection")
 
 module.exports = {
@@ -78,6 +80,10 @@ module.exports = {
                 const cam_id = parseInt(result.rows[i].campanha_id)
                 const stock = parseInt(result.rows[i].stock)
                 //se o stock for 0 nao faz nada 
+                if(parseInt(ano) > parseInt(fim[2]) || parseInt(mes) > parseInt(fim[1]) || parseInt(dia) > parseInt(fim[0])){
+                   await pool.query('DELETE FROM campanha where campanha_id = $1', [cam_id])
+                }
+                
                 if (stock == 0){
                     return res.status(400).send({resultado: 'campanha is full'})
                 }

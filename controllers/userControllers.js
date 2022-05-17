@@ -8,7 +8,7 @@ module.exports = {
         const nome = req.body.username;
         const pass = req.body.password;
         const user = {username: nome, password: pass}
-        console.log(nome, pass)
+        
 
         pool.query('SELECT username FROM users WHERE username = $1',[nome], (error, result)=>{
             if (error) {
