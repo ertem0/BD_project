@@ -6,6 +6,7 @@ const {Pool} = require("pg")
 
 module.exports = {
     cart: async (req, res) => {
+        
         const quantidade= req.body.quantidade
         const cart=req.body.cart
         const produto_id = req.body.produto_id
@@ -22,14 +23,15 @@ module.exports = {
                     }
                     
                     else{
-                        line= await pool.query('select version from versao_produto where produto_id=$1'[produto_id])
-                        if(line.rows[0] === undefined){
+                        let line2= await pool.query('select version from versao_produto where produto_id=$1'[produto_id])
+                        if(line2.rows[0] === undefined){
                             version = 1
                         }    
                         else{
                             version = line.rows[0].version +1
                         }    
-                        await pool.query('insert into versao_podutos(nome,preco,stock,version,descricao,creation_date)')
+                        let date = new Date()
+                        await pool.query('insert into versao_podutos(nome,preco,stock,version,descricao,creation_date) VALUES($1,$2,$3,$4,$5,$6)',[line.rows[0].nome,line.rows[0].preco,line.rows[0].stock,version,line.rows[0].descricao])
                     }              
 
                 await pool.query('update produtos set stock_produto = stock_produto - $1 where produto_id = $2;',[cart[i][1],cart[i][0]])
@@ -62,6 +64,7 @@ module.exports = {
         const tokenheader = req.headers.authorization 
         
         tokeninfo = jwt.verify(tokenheader, '123456')
+        console.log(tokeninfo.username)
         let line
         try {
             line = await pool.query('SELECT users_username FROM vendedor WHERE users_username = $1',[tokeninfo.username])
