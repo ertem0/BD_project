@@ -9,12 +9,29 @@ module.exports = {
         const quantidade= req.body.quantidade
         const cart=req.body.cart
         const produto_id = req.body.produto_id
+        var version
         try {
             await pool.query('BEGIN')
             console.log("started transaction")
             for (let i = 0; i < cart.length; i++) {
                 let line
-                
+                line = await pool.query('select * from produtos where produto_id=$1'[produto_id])
+                    
+                    if(line.rows[0] === undefined){
+                        return res.status(200).json({response: "produto nao existe"})  
+                    }
+                    
+                    else{
+                        line= await pool.query('select version from versao_produto where produto_id=$1'[produto_id])
+                        if(line.rows[0] === undefined){
+                            version = 1
+                        }    
+                        else{
+                            version = line.rows[0].version +1
+                        }    
+                        await pool.query('insert into versao_podutos(nome,preco,stock,version,descricao,creation_date)')
+                    }              
+
                 await pool.query('update produtos set stock_produto = stock_produto - $1 where produto_id = $2;',[cart[i][1],cart[i][0]])
                 line = await pool.query('select stock_produto from produtos where produto_id = $1',[cart[i][0]])
 
@@ -122,5 +139,5 @@ module.exports = {
         }
         
     })    
-    }                            
+    },
 }
