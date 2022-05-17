@@ -45,11 +45,13 @@ module.exports = {
         const tokenheader = req.headers.authorization 
         
         tokeninfo = jwt.verify(tokenheader, '123456')
+        
         let line
         try {
             line = await pool.query('SELECT users_username FROM vendedor WHERE users_username = $1',[tokeninfo.username])
+            
         } catch (error) {
-            line = error
+            throw(error)
         }
         if (line.rows[0] === undefined){
             return res.status(401).send()
