@@ -121,7 +121,7 @@ module.exports = {
         if (line.rows[0] === undefined){
             return res.status(401).send()
         }
-        console.log(line)  
+        
         try {      
             let result= await pool.query('SELECT produto_id FROM produtos WHERE produto_id= $1 ', [produto_id] )
          
@@ -142,7 +142,7 @@ module.exports = {
                 await pool.query('INSERT INTO smartphones(marca,produtos_produto_id) VALUES($1,$2)', [marca, produto_id])
                         
                 return res.status(200).json({ response: "produto criado" })
-                    
+  
                 
             } catch (error) {
                 throw error
@@ -197,7 +197,7 @@ module.exports = {
         const preco = req.body.preco
         const stock = req.body.stock
         const tokenheader = req.headers.authorization 
-        
+        var version
         tokeninfo = jwt.verify(tokenheader, '123456')
         
         let line
@@ -224,7 +224,7 @@ module.exports = {
             let line2= await pool.query('select MAX(version) from versao_produto where produtos_produto_id=$1',[produto_id])// verifica a versao maxima do produto
             
             
-            if(line2.rows[0] === undefined){//se nao tem versao da-lhe a versao 1 
+            if(line2.rows[0].max === null){//se nao tem versao da-lhe a versao 1 
                 version = 1
                 
             }    

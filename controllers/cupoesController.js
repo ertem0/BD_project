@@ -15,7 +15,7 @@ module.exports = {
         const validade = parseInt(req.body.validade)
         const tokenheader = req.headers.authorization
         
-        var id_campanha = 0
+      
         var id_cupao = 0
         tokeninfo = jwt.verify(tokenheader, '123456')
         
@@ -28,26 +28,7 @@ module.exports = {
                 return res.status(500).send({resultado: "user is not admin"})
             }
 
-            result = await pool.query('SELECT inicio, fim FROM campanha')
-            //verificar se as datas das campanhas criadas nao ficam uma em cima das outras
-            for(const i in result.rows){
-                const inicio = result.rows[i].inicio.split("-")
-                const fim = result.rows[i].fim.split("-")
-                
-
-            } 
-                //se da data for igual ou maior que o inicio soma a condicao
-                if(((parseInt(dia)<= parseInt(fim[0]) ||parseInt(dia)> parseInt(fim[0])) && parseInt(mes) >= parseInt(inicio[1]) && parseInt(inicio[2]) == parseInt(ano)) || (parseInt(ano) > parseInt(inicio[2]))){
-                    cond+=1
-                    
-                }
-                //se a data for menor ou igual que o inicio soma a condicao
-                if(( (parseInt(dia)<= parseInt(fim[0]) ||parseInt(dia)> parseInt(fim[0]))&&  parseInt(mes)<= parseInt(fim[1]) && parseInt(fim[2]) == parseInt(ano)) || parseInt(ano) < parseInt(fim[2])){
-                    cond+=1
-                    
-                }
-
-
+  
 
             //buscar o id da ultima campanha
             result = await pool.query('SELECT MAX(campanha_id) FROM campanha') 
