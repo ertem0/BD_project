@@ -11,12 +11,15 @@ module.exports = {
         const quantidade= req.body.quantidade
         const cart=req.body.cart
         const produto_id = req.body.produto_id
+        const cupao_id = parseInt(req.body.cupao_id)
         var version
         const tokenheader = req.headers.authorization 
         
         tokeninfo = jwt.verify(tokenheader, '123456')
         console.log(tokeninfo.username)
         let line
+
+        //procura o nome do user do token na tabela de compradores para ver se é um comprador
         try {
             line = await pool.query('SELECT users_username FROM comprador WHERE users_username = $1',[tokeninfo.username])
             
@@ -30,67 +33,65 @@ module.exports = {
         
         try {
             await pool.query('BEGIN')
-            console.log("started transaction")
+            
             for (let i = 0; i < cart.length; i++) {
                 let line
                 let preco_total
+
+                //vai buscar o stock de um certo produto
+                line = await pool.query('select stock_produto from produtos where produto_id = $1',[cart[i][0]])
                 
+                if (line.rows[0].stock_produto == 0) {
+                    throw new Error('Produto sem estoque')
+                }
+
+                //vai buscar todos o produto com o id recebido
                 line = await pool.query('select * from produtos where produto_id=$1',[cart[i][0]])
-                console.log("here2")
+                
                     if(line.rows[0] === undefined){
                         
                         return res.status(200).json({response: "produto nao existe"})  
                     }
                     
                     else{
+
+                        //vai buscar o preço dos produtos
                         let line3= await pool.query('select preco from produtos where produto_id=$1',[cart[i][0]])
                         preco_total =preco_total + (parseInt(line3.rows[0].preco) * cart[i][1])
-                        console.log("here4")
+
+                        //guarda a maior versao ja dada na versao atualiza para uma nova inserçao
                         let line2= await pool.query('select MAX(version) from versao_produto where produtos_produto_id=$1',[cart[i][0]])
-                        console.log("here5")
-                        console.log(line.rows[0].produto_id)
-                        console.log(line2.rows[0])
+                        
                         if(line2.rows[0] === undefined){
                             version = 1
-                            console.log("here6")
+                            
                         }    
                         else{
-                            console.log("here7")
+                            
                             version = 1 + parseInt(line2.rows[0].max) 
                         }    
+                        //guarda a data de hoje
                         let date = new Date()
                         const dia = date.getDate()
                         const mes = date.getMonth() + 1
                         const ano = date.getFullYear()
-                
                         const data = dia.toString() + '-' + mes.toString() + '-' + ano.toString()
                         
-                        console.log("here8")
-                      
+                        //insere a compra no carrinho e guarda a versao do produto
                         await pool.query('INSERT INTO versao_produto(nome,preco,stock,version,descricao,creation_date,produtos_produto_id) VALUES($1,$2,$3,$4,$5,$6,$7)',[line.rows[0].nome,line.rows[0].preco,line.rows[0].stock_produto,version,line.rows[0].descricao,data,cart[i][0]])
-                        console.log("here9")
-
                         await pool.query('insert into cart(quantidade,produtos_produto_id,comprador_users_username) values ($1,$2,$3)',[cart[i][1],cart[i][0],tokeninfo.username])
-                        console.log("here91")
+                        await pool.query('DELETE FROM subscricoes WHERE comprador_users_username = $1 AND cupao_id_cupao = $2', [tokeninfo.username,cupao_id])
                     }
                                     
-                console.log("here92") 
-                await pool.query('update produtos set stock_produto = stock_produto - $1 where produto_id = $2;',[cart[i][1],cart[i][0]])
-                console.log("here10")
-                line = await pool.query('select stock_produto from produtos where produto_id = $1',[cart[i][0]])
-                console.log("here11")
                 
-                if (line.rows[0].stock_produto < 0) {
-                    throw new Error('Produto sem estoque')
-                }
+                await pool.query('update produtos set stock_produto = stock_produto - $1 where produto_id = $2;',[cart[i][1],cart[i][0]])
+                
 
             }
-            console.log("here12")
             await pool.query('COMMIT')
-            console.log("here13")
+            
           } catch (e) {
             await pool.query('ROLLBACK')
-            console.log("traz")
              console.log(e)
           } finally{
               return res.status(200).json({"status":"ok"})
@@ -140,7 +141,6 @@ module.exports = {
                     
                 await pool.query('INSERT INTO smartphones(marca,produtos_produto_id) VALUES($1,$2)', [marca, produto_id])
                         
-                console.log("yeeee")
                 return res.status(200).json({ response: "produto criado" })
                     
                 

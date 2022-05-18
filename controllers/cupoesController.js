@@ -48,10 +48,6 @@ module.exports = {
                 }
 
 
-            } 
-
-
-
 
             //buscar o id da ultima campanha
             result = await pool.query('SELECT MAX(campanha_id) FROM campanha') 
@@ -80,7 +76,7 @@ module.exports = {
 
             return res.status(200).send({resultado: "campanha created"})
             
-            }
+        }
         catch (e){
             pool.query('ROLLBACK')
             throw e
@@ -102,6 +98,18 @@ module.exports = {
         var posicao = 0
         const tokenheader = req.headers.authorization
         tokeninfo = jwt.verify(tokenheader, '123456')
+
+        //procura o nome do user do token na tabela de compradores para ver se é um comprador
+        try {
+            line = await pool.query('SELECT users_username FROM comprador WHERE users_username = $1',[tokeninfo.username])
+            
+        } catch (error) {
+            throw(error)
+        }
+        if (line.rows[0] === undefined){
+            return res.status(401).json({response: "nao autorizado"})
+        }
+
         try{
             //recebe os dados de inicio e fim da campanha juntamente com o id e stock de cada
             let result = await pool.query('SELECT inicio, fim, campanha_id , stock FROM campanha')
@@ -168,3 +176,4 @@ module.exports = {
             throw e
         }
     }
+}
