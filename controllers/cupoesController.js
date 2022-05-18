@@ -21,11 +21,38 @@ module.exports = {
         
         try{
             await pool.query('BEGIN')
+
             //verifica se o usuario e admin
             let result =await pool.query('SELECT users_username FROM administrador where users_username = $1',[tokeninfo.username])
             if(result.rows[0] === undefined){
                 return res.status(500).send({resultado: "user is not admin"})
             }
+
+            result = await pool.query('SELECT inicio, fim FROM campanha')
+            //verificar se as datas das campanhas criadas nao ficam uma em cima das outras
+            for(const i in result.rows){
+                const inicio = result.rows[i].inicio.split("-")
+                const fim = result.rows[i].fim.split("-")
+                
+
+            } 
+                //se da data for igual ou maior que o inicio soma a condicao
+                if(((parseInt(dia)<= parseInt(fim[0]) ||parseInt(dia)> parseInt(fim[0])) && parseInt(mes) >= parseInt(inicio[1]) && parseInt(inicio[2]) == parseInt(ano)) || (parseInt(ano) > parseInt(inicio[2]))){
+                    cond+=1
+                    
+                }
+                //se a data for menor ou igual que o inicio soma a condicao
+                if(( (parseInt(dia)<= parseInt(fim[0]) ||parseInt(dia)> parseInt(fim[0]))&&  parseInt(mes)<= parseInt(fim[1]) && parseInt(fim[2]) == parseInt(ano)) || parseInt(ano) < parseInt(fim[2])){
+                    cond+=1
+                    
+                }
+
+
+            } 
+
+
+
+
             //buscar o id da ultima campanha
             result = await pool.query('SELECT MAX(campanha_id) FROM campanha') 
                 
@@ -86,9 +113,9 @@ module.exports = {
                 const stock = parseInt(result.rows[i].stock)
                 
 
-                if(parseInt(ano) > parseInt(fim[2]) || parseInt(mes) > parseInt(fim[1]) && parseInt(ano) <= parseInt(fim[2])|| parseInt(dia) > parseInt(fim[0]) && parseInt(mes) == parseInt(fim[1]) && parseInt(ano) == parseInt(fim[2])){
-                   await pool.query('DELETE FROM campanha where campanha_id = $1', [cam_id])
-                }
+                // if(parseInt(ano) > parseInt(fim[2]) || parseInt(mes) > parseInt(fim[1]) && parseInt(ano) <= parseInt(fim[2])|| parseInt(dia) > parseInt(fim[0]) && parseInt(mes) == parseInt(fim[1]) && parseInt(ano) == parseInt(fim[2])){
+                //    await pool.query('DELETE FROM campanha where campanha_id = $1', [cam_id])
+                // }
 
                 //se o stock for 0 nao faz nada 
                 if (stock == 0){
