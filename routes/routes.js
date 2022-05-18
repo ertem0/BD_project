@@ -10,8 +10,9 @@ router.route('/user').post(usercontrollers.register).put(usercontrollers.login);
 router.route('/create_question').post(middlewares.authenticateToken, qandrcontrollers.create_question);
 router.route('/campaign').post(cupoes.createCampanha)
 router.route('/cart').post(productcontrollers.cart);
-router.route('/subscribe').put(cupoes.subscribe)
-router.route('/product').put(productcontrollers.update_product).post(productcontrollers.criar_novo_produto);
+router.route('/subscribe/:campanha_id').put(cupoes.subscribe)
+router.route('/product').post(productcontrollers.criar_novo_produto).put(productcontrollers.update_product);
+
 module.exports = router;
 
 

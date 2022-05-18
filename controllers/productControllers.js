@@ -191,6 +191,7 @@ module.exports = {
         
     },  
     update_product:async (req, res) =>{
+
         const produto_id = req.body.produto_id
         const nome = req.body.nome
         const descricao = req.body.descricao
