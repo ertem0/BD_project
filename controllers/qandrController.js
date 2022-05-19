@@ -13,6 +13,7 @@ module.exports = {
         pool.query('INSERT INTO perguntas (produtos_produto_id, pergunta, users_username) VALUES ($1, $2, $3) RETURNING (pergunta_id)', [prod_id, question, user] , (error, result)=>{
                 
                 if (error) {
+                    throw error
                     return res.status(500).json({err: error})
                 }
                 return res.status(200).json({status: 200, results: result.rows[0]["pergunta_id"]})
