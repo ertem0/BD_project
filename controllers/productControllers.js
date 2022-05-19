@@ -270,9 +270,39 @@ module.exports = {
         }
     },
     info: async(req, res)=>{
-
-        const id = req.params.produto_id
-        return res.status(200).send({result: id})
+        try{
+            const id = req.params.produto_id
+            var prices = []
+            let result =await pool.query('select  nome, preco, descricao, stock_produto, (select array_agg (preco) from versao_produto where produtos_produto_id = $1) versao ,(select AVG(rating) from ratings where produtos_produto_id = $1) rating_avg, (select array_agg(comentario) from ratings where produtos_produto_id = $1)comentarios , (select array_agg(data) from cart) datas from produtos where produto_id= $1', [id])
+            const preco_atual = result.rows[0].preco
+            const precos_versoes = result.rows[0].versao
+            const rating_avg = result.rows[0].rating_avg
+            const descricao =result.rows[0].descricao
+            const comentarios = result.rows[0].comentarios
+            const stock = result.rows[0].stock_produto
+            const nome = result.rows[0].nome
+            const datas_versao = result.rows[0].datas
+            
+            let date = new Date()
+            const dia = date.getDate()
+            const mes = date.getMonth() + 1
+            const ano = date.getFullYear()
+            const data = dia.toString() + '-' + mes.toString() + '-' + ano.toString()
+            
+            const string = preco_atual + ' - ' + data
+            prices.push(string)
+            
+            for (const i in precos_versoes){
+                const string = precos_versoes[i] + ' - ' + datas_versao[i]
+                prices.push(string)
+            }
+            
+            return res.status(200).send({status: 200, result: {nome: nome, stock: stock, descricao: descricao, prices: prices, ratings: rating_avg, comentarios: comentarios}})
+                        
+        }
+        catch(e){
+            return res.status(400).send({status: 400, errors: e})
+        }
 
     }
 }
