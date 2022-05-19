@@ -104,9 +104,6 @@ module.exports = {
                 return res.status(200).json({"status":200},{'order_id':order_id})
               } catch (e) {
                 
-                 console.log(e)
-              
-            
                 await pool.query('ROLLBACK')
                 
                 return res.status(400).json({"status":400,"errors":e.message})
