@@ -19,6 +19,7 @@ module.exports = {
         
         try{
         //verifica se o usuario e admin
+            await pool.query('BEGIN')
             let result =await pool.query('SELECT users_username FROM administrador where users_username = $1',[tokeninfo.username])
             if(result.rows[0] === undefined){
                 return res.status(500).send({resultado: "user is not admin"})
@@ -27,16 +28,16 @@ module.exports = {
             //inserir a campanha
             result = await pool.query('INSERT INTO campanha (inicio, fim, description, stock, produtos_produto_id, administrador_users_username) VALUES($1,$2,$3,$4,$5,$6) RETURNING (campanha_id)',
                 [start, end, description, stock, produto_id, tokeninfo.username])
-            console.log("campanha_id")
+            
             //inserir o cupao
-            await pool.query('INSERT INTO cupao (campanha_campanha_id, desconto, validade) VALUES ($1, $2, $3)', [id_campanha, desconto, validade])
+            await pool.query('INSERT INTO cupao (campanha_campanha_id, desconto, validade) VALUES ($1, $2, $3)', [result.rows[0].campanha_id, desconto, validade])
 
             pool.query("COMMIT")
 
             return res.status(200).send({resultado: "campanha created"})        
         }
         catch (e){
-            
+            await pool.query('ROLLBACK')
             throw e
         }
    
@@ -74,10 +75,11 @@ module.exports = {
          
         try{
             
-            
+            await pool.query('BEGIN')
             let cupao_id = await pool.query('SELECT id_cupao from cupao where campanha_campanha_id = $1', [id])
             //recebe os id e stock 
-            let result = await pool.query('SELECT inicio,stock FROM campanha')
+            let result = await pool.query('SELECT inicio,stock FROM campanha where campanha_id = $1', [id]);
+            
             
             // if(parseInt(ano) > parseInt(fim[2]) || parseInt(mes) > parseInt(fim[1]) && parseInt(ano) <= parseInt(fim[2])|| parseInt(dia) > parseInt(fim[0]) && parseInt(mes) == parseInt(fim[1]) && parseInt(ano) == parseInt(fim[2])){
             //    await pool.query('DELETE FROM campanha where campanha_id = $1', [cam_id])
@@ -86,7 +88,8 @@ module.exports = {
                 return res.status(401).send({resultado:"campanha nao existe"})
             }
             //se o stock for 0 nao faz nada 
-            if(parseInt(result.rows[0].stock) == 0){
+            const stock  = parseInt(result.rows[0].stock)
+            if(stock== 0){
                 return res.status(401).send({result: "ja nao ha mais cupoes"})
             }
             
@@ -94,11 +97,11 @@ module.exports = {
             if(result.rows[0] != undefined){
                 return res.status(401).send({result: "utilizado ja esta inscrito nesta campanha"})
             }
-            result = await pool.query('SELECT campanha_id FROM campanha')
-
+            result = await pool.query('SELECT campanha_id, stock FROM campanha')
+            
             if(result.rows[0] != undefined){
                 //verifica o valor da ultima posicao
-                result = await pool.query('SELECT MAX(posicao) FROM subscricoes') 
+                result = await pool.query('SELECT MAX(posicao) FROM subscricoes where cupao_id_cupao = $1',[parseInt(cupao_id.rows[0].id_cupao)]) 
 
                 
                 if(result.rows[0].max === null){
@@ -113,11 +116,11 @@ module.exports = {
                 await pool.query('INSERT INTO subscricoes (posicao, comprador_users_username, cupao_id_cupao, data_inscricao) VALUES ($1, $2, $3, $4)', 
                 [posicao,tokeninfo.username , parseInt(cupao_id.rows[0].id_cupao),data])
                 
-                
-                
+
                 //atualiza o stock
                 await pool.query('UPDATE campanha SET stock = $1 where campanha_id = $2',[stock-1, id])
                 
+                await pool.query('COMMIT')
                 return res.status(200).json({resultado: 'subscricao feita com sucesso'})
             }
 
@@ -125,6 +128,7 @@ module.exports = {
             return res.status(200).send({resultado: 'nao existe essa campanha'})
         }
         catch(e){
+            await pool.query('ROLLBACK')
             throw e
         }
     }
