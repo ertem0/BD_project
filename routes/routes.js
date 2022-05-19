@@ -7,7 +7,8 @@ const cupoes = require('../controllers/cupoesController')
 const productcontrollers = require('../controllers/productControllers');
 
 router.route('/user').post(usercontrollers.register).put(usercontrollers.login);
-router.route('/create_question').post(middlewares.authenticateToken, qandrcontrollers.create_question);
+router.route('/questions/:prod_id').post(qandrcontrollers.create_question);
+router.route('/questions/:prod_id/:question_id').post(qandrcontrollers.create_response);
 router.route('/campaign').post(cupoes.createCampanha)
 router.route('/cart').post(productcontrollers.cart);
 router.route('/subscribe/:campanha_id').put(cupoes.subscribe)
