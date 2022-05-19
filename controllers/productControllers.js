@@ -264,7 +264,8 @@ module.exports = {
             return res.status(200).json({ "status":200})
         } catch (error) {
             await pool.query('ROLLBACK')
-            throw error
+            
+            return res.status(400).json({"status":400, "errors":error})
         }
-    }
+    },
 }
