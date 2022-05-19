@@ -12,8 +12,9 @@ module.exports = {
         const cart=req.body.cart
         const produto_id = req.body.produto_id
         const cupao_id = parseInt(req.body.cupao_id)
-        var version
         const tokenheader = req.headers.authorization 
+        var version
+        var order_id
         
         tokeninfo = jwt.verify(tokenheader, '123456')
         console.log(tokeninfo.username)
@@ -31,9 +32,7 @@ module.exports = {
         }
         
         
-        try {
-            
-            
+        try {     
             for (let i = 0; i < cart.length; i++) {
                 let line
                 let preco_total
@@ -56,19 +55,19 @@ module.exports = {
                     else{
 
                         //vai buscar o preço dos produtos
-                        let line3= await pool.query('select preco from produtos where produto_id=$1',[cart[i][0]])
-                        preco_total =preco_total + (parseInt(line3.rows[0].preco) * cart[i][1])
+                        let precos= await pool.query('select preco from produtos where produto_id=$1',[cart[i][0]])
+                        preco_total =preco_total + (parseInt(precos.rows[0].preco) * cart[i][1])
 
                         //guarda a maior versao ja dada na versao atualiza para uma nova inserçao
-                        let line2= await pool.query('select MAX(version) from versao_produto where produtos_produto_id=$1',[cart[i][0]])
+                        let max_ver= await pool.query('select MAX(version) from versao_produto where produtos_produto_id=$1',[cart[i][0]])
                         
-                        if(line2.rows[0] === undefined){
+                        if(max_ver.rows[0].max === null){
                             version = 1
                             
                         }    
                         else{
                             
-                            version = 1 + parseInt(line2.rows[0].max) 
+                            version = 1 + parseInt(max_ver.rows[0].max) 
                         }    
                         //guarda a data de hoje
                         let date = new Date()
@@ -78,8 +77,11 @@ module.exports = {
                         const data = dia.toString() + '-' + mes.toString() + '-' + ano.toString()
                         
                         //insere a compra no carrinho e guarda a versao do produto
-                        await pool.query('INSERT INTO versao_produto(nome,preco,stock,version,descricao,creation_date,produtos_produto_id) VALUES($1,$2,$3,$4,$5,$6,$7)',[line.rows[0].nome,line.rows[0].preco,line.rows[0].stock_produto,version,line.rows[0].descricao,data,cart[i][0]])
-                        await pool.query('insert into cart(quantidade,produtos_produto_id,comprador_users_username) values ($1,$2,$3)',[cart[i][1],cart[i][0],tokeninfo.username])
+                        
+                        await pool.query('INSERT INTO versao_produto(nome,preco,stock,version,descricao,creation_date,produtos_produto_id) VALUES($1,$2,$3,$4,$5,$6,$7)',
+                        [line.rows[0].nome,line.rows[0].preco,line.rows[0].stock_produto,version,line.rows[0].descricao,data,cart[i][0]])
+                        
+                        await pool.query('insert into cart(quantidade,order_id,produtos_produto_id,comprador_users_username) values ($1,$2,$3,$4)',[cart[i][1],order_id,cart[i][0],tokeninfo.username])
                         await pool.query('DELETE FROM subscricoes WHERE comprador_users_username = $1 AND cupao_id_cupao = $2', [tokeninfo.username,cupao_id])
                     }
                                     
@@ -101,7 +103,6 @@ module.exports = {
 
     criar_novo_produto: async (req, res) => {
         const type = req.body.type
-        const produto_id = req.body.produto_id
         const empresa_id= req.body.empresa_id
         const nome = req.body.nome
         const descricao = req.body.descricao
@@ -121,23 +122,15 @@ module.exports = {
         if (line.rows[0] === undefined){
             return res.status(401).send()
         }
+        console.log(line)  
         
-        try {      
-            let result= await pool.query('SELECT produto_id FROM produtos WHERE produto_id= $1 ', [produto_id] )
-         
-            if (result.rows[0] !== undefined) {  
-                return res.status(200).json({ response: "produto ja existente" })
-            }
-        } catch (error) {
-            throw(error)
-        }
         if (type === "smartphone") {
             try {
                 const marca = req.body.marca
                 if (marca === undefined) {
                     return res.status(200).json({ response: "marca nao definida" })
                 }
-                await pool.query('INSERT INTO produtos (produto_id,nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5,$6)', [produto_id, nome, preco, descricao,stock,empresa_id])
+                await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)', [ nome, preco, descricao,stock,empresa_id])
                     
                 await pool.query('INSERT INTO smartphones(marca,produtos_produto_id) VALUES($1,$2)', [marca, produto_id])
                         
@@ -156,7 +149,7 @@ module.exports = {
                 if (dimensao === undefined) {
                     return res.status(200).json({ response: "dimensao nao definida" })
                 }
-                let result=await pool.query('INSERT INTO produtos (produto_id,nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5,$6)', [produto_id, nome, preco, descricao,stock,empresa_id])
+                let result=await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (product_id)', [ nome, preco, descricao,stock,empresa_id])
                    
                 await pool.query('INSERT INTO televisoes(dimensao,produtos_produto_id ) VALUES($1,$2)', [dimensao,produto_id])
                 return res.status(200).json({ response: "produto criado" })
@@ -173,7 +166,7 @@ module.exports = {
             if (cpu === undefined) {
                 return res.status(200).json({ response: "cpu nao definida" })
             }
-            await pool.query('INSERT INTO produtos (produto_id,nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5,$6)',// insere produto
+            await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)',// insere produto
             [produto_id, nome, preco, descricao,stock,empresa_id])
                 
             await pool.query('INSERT INTO computadores(cpu,produtos_produto_id) VALUES($1,$2)', [cpu, produto_id])// insere nos computadores
@@ -191,8 +184,8 @@ module.exports = {
         
     },  
     update_product:async (req, res) =>{
-
-        const produto_id = req.body.produto_id
+        const produto_id = req.param.produto_id
+        console.log(produto_id)
         const nome = req.body.nome
         const descricao = req.body.descricao
         const preco = req.body.preco
