@@ -103,15 +103,15 @@ module.exports = {
 
     criar_novo_produto: async (req, res) => {
         const type = req.body.type
-        const empresa_id= req.body.empresa_id
+        const empresa_id= parseInt(req.body.empresa_id)
         const nome = req.body.nome
         const descricao = req.body.descricao
-        const preco = req.body.preco
-        const stock = req.body.stock
+        const preco = parseInt(req.body.preco)
+        const stock = parseInt(req.body.stock)
         const tokenheader = req.headers.authorization 
         
         tokeninfo = jwt.verify(tokenheader, '123456')
-        console.log(tokeninfo.username)
+        
         let line
         try {
             line = await pool.query('SELECT users_username FROM vendedor WHERE users_username = $1',[tokeninfo.username])
@@ -122,7 +122,8 @@ module.exports = {
         if (line.rows[0] === undefined){
             return res.status(401).send()
         }
-        console.log(line)  
+        
+        let result =await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)', [ nome, preco, descricao,stock,empresa_id])
         
         if (type === "smartphone") {
             try {
@@ -130,9 +131,8 @@ module.exports = {
                 if (marca === undefined) {
                     return res.status(200).json({ response: "marca nao definida" })
                 }
-                await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)', [ nome, preco, descricao,stock,empresa_id])
                     
-                await pool.query('INSERT INTO smartphones(marca,produtos_produto_id) VALUES($1,$2)', [marca, produto_id])
+                await pool.query('INSERT INTO smartphones(marca,produtos_produto_id) VALUES($1,$2)', [marca, result.rows[0].produto_id])
                         
                 return res.status(200).json({ response: "produto criado" })
   
@@ -144,14 +144,14 @@ module.exports = {
         }
         else if (type === "televisao") {
             try{
-                console.log("here")
+                
                 const dimensao = req.body.dimensao
                 if (dimensao === undefined) {
                     return res.status(200).json({ response: "dimensao nao definida" })
                 }
-                let result=await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (product_id)', [ nome, preco, descricao,stock,empresa_id])
-                   
-                await pool.query('INSERT INTO televisoes(dimensao,produtos_produto_id ) VALUES($1,$2)', [dimensao,produto_id])
+                
+                console.log(result)
+                await pool.query('INSERT INTO televisoes(dimensao,produtos_produto_id ) VALUES($1,$2)', [dimensao,result.rows[0].produto_id])
                 return res.status(200).json({ response: "produto criado" })
                 
             } catch (error) {
@@ -166,10 +166,8 @@ module.exports = {
             if (cpu === undefined) {
                 return res.status(200).json({ response: "cpu nao definida" })
             }
-            await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)',// insere produto
-            [produto_id, nome, preco, descricao,stock,empresa_id])
-                
-            await pool.query('INSERT INTO computadores(cpu,produtos_produto_id) VALUES($1,$2)', [cpu, produto_id])// insere nos computadores
+
+            await pool.query('INSERT INTO computadores(cpu,produtos_produto_id) VALUES($1,$2)', [cpu, result.rows[0].produto_id])// insere nos computadores
                     
             return res.status(200).send({ response: "produto criado" })
              
