@@ -101,7 +101,6 @@ module.exports = {
 
     criar_novo_produto: async (req, res) => {
         const type = req.body.type
-        const produto_id = req.body.produto_id
         const empresa_id= req.body.empresa_id
         const nome = req.body.nome
         const descricao = req.body.descricao
@@ -122,12 +121,16 @@ module.exports = {
             return res.status(401).send()
         }
         console.log(line)  
-        try {      
-            let result= await pool.query('SELECT produto_id FROM produtos WHERE produto_id= $1 ', [produto_id] )
-         
-            if (result.rows[0] !== undefined) {  
-                return res.status(200).json({ response: "produto ja existente" })
+        try {     
+            
+            let max_prod= await pool.query('select MAX(produto_id) from produtos')
+            if (max_prod.rows[0].max === null){
+                produto_id=1
             }
+            else{
+                produto_id=parseInt(max_prod.rows[0].max)+1
+            }
+           
         } catch (error) {
             throw(error)
         }
@@ -191,13 +194,14 @@ module.exports = {
         
     },  
     update_product:async (req, res) =>{
-        const produto_id = req.body.produto_id
+        const produto_id = req.param.produto_id
+        console.log(produto_id)
         const nome = req.body.nome
         const descricao = req.body.descricao
         const preco = req.body.preco
         const stock = req.body.stock
         const tokenheader = req.headers.authorization 
-        
+        var version
         tokeninfo = jwt.verify(tokenheader, '123456')
         
         let line
@@ -224,7 +228,7 @@ module.exports = {
             let line2= await pool.query('select MAX(version) from versao_produto where produtos_produto_id=$1',[produto_id])// verifica a versao maxima do produto
             
             
-            if(line2.rows[0] === undefined){//se nao tem versao da-lhe a versao 1 
+            if(line2.rows[0].max === null){//se nao tem versao da-lhe a versao 1 
                 version = 1
                 
             }    
