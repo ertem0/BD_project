@@ -113,16 +113,16 @@ module.exports = {
 
     criar_novo_produto: async (req, res) => {
         const type = req.body.type
-        const empresa_id= req.body.empresa_id
+        const empresa_id= parseInt(req.body.empresa_id)
         const nome = req.body.nome
         const descricao = req.body.descricao
-        const preco = req.body.preco
-        const stock = req.body.stock
+        const preco = parseInt(req.body.preco)
+        const stock = parseInt(req.body.stock)
         const tokenheader = req.headers.authorization 
         
 
         tokeninfo = jwt.verify(tokenheader, '123456')
-        console.log(tokeninfo.username)
+        
         let line
         try {
             line = await pool.query('SELECT users_username FROM vendedor WHERE users_username = $1',[tokeninfo.username])
@@ -133,7 +133,8 @@ module.exports = {
         if (line.rows[0] === undefined){
             return res.status(400).json({"status": 400 , "errors": "utilizador nao autorizado"})
         }
-        console.log(line)  
+        
+        let result =await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)', [ nome, preco, descricao,stock,empresa_id])
         
         if (type === "smartphone") {
             try {
@@ -155,7 +156,7 @@ module.exports = {
         }
         else if (type === "televisao") {
             try{
-                console.log("here")
+                
                 const dimensao = req.body.dimensao
                 if (dimensao === undefined) {
                     return res.status(400).json()
