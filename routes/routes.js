@@ -6,6 +6,7 @@ const middlewares = require('../controllers/middlewares');
 const cupoes = require('../controllers/cupoesController')
 const productcontrollers = require('../controllers/productControllers');
 
+
 router.route('/user').post(usercontrollers.register).put(usercontrollers.login);
 router.route('/questions/:prod_id').post(qandrcontrollers.create_question);
 router.route('/questions/:prod_id/:question_id').post(qandrcontrollers.create_response);
