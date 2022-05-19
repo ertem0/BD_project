@@ -42,7 +42,7 @@ module.exports = {
             }
            
         try {     
-            
+            await pool.query('BEGIN')
             for (let i = 0; i < cart.length; i++) {
                 let line
                 let preco_total
@@ -124,7 +124,6 @@ module.exports = {
         const preco = parseInt(req.body.preco)
         const stock = parseInt(req.body.stock)
         const tokenheader = req.headers.authorization 
-        
 
         tokeninfo = jwt.verify(tokenheader, '123456')
         
@@ -138,45 +137,40 @@ module.exports = {
         if (line.rows[0] === undefined){
             return res.status(400).json({"status": 400 , "errors": "utilizador nao autorizado"})
         }
-        
-        let result =await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)', [ nome, preco, descricao,stock,empresa_id])
+        try{
+        await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)', [ nome, preco, descricao,stock,empresa_id])
         
         if (type === "smartphone") {
-            try {
-                const marca = req.body.marca
-                if (marca === undefined) {
-                    return res.status(400).json({ "status": 400, "errors": "marca nao definida" })
-                }
-                let result= await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)', [ nome, preco, descricao,stock,empresa_id])
-                    
-                await pool.query('INSERT INTO smartphones(marca,produtos_produto_id) VALUES($1,$2)', [marca, result.rows[0].produto_id])
-                        
-                return res.status(200).json({"status":200, "results":result.rows[0].produto_id})
-  
-                
-            } catch (error) {
-                throw error
+            
+            const marca = req.body.marca
+            if (marca === undefined) {
+                return res.status(400).json({ "status": 400, "errors": "marca nao definida" })
             }
+            let result= await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)', [ nome, preco, descricao,stock,empresa_id])
+                
+            await pool.query('INSERT INTO smartphones(marca,produtos_produto_id) VALUES($1,$2)', [marca, result.rows[0].produto_id])
+            await pool.query('COMMIT')      
+            return res.status(200).json({"status":200, "results":result.rows[0].produto_id})
+  
             
         }
         else if (type === "televisao") {
-            try{
+            
                 
-                const dimensao = req.body.dimensao
-                if (dimensao === undefined) {
-                    return res.status(400).json()
-                }
-                let result=await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (product_id)', [ nome, preco, descricao,stock,empresa_id])
-                   
-                await pool.query('INSERT INTO televisoes(dimensao,produtos_produto_id ) VALUES($1,$2)', [dimensao,result.rows[0].produto_id])
-                return res.status(200).json({"status":200, "results":result.rows[0].produto_id})
-                
-            } catch (error) {
-                throw error
+            const dimensao = req.body.dimensao
+            if (dimensao === undefined) {
+                return res.status(400).json()
             }
+            let result=await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (product_id)', [ nome, preco, descricao,stock,empresa_id])
+                
+            await pool.query('INSERT INTO televisoes(dimensao,produtos_produto_id ) VALUES($1,$2)', [dimensao,result.rows[0].produto_id])
+            await pool.query('COMMIT') 
+            return res.status(200).json({"status":200, "results":result.rows[0].produto_id})
+            
+        
         }
         else if (type === "computador") {
-            try{
+            
 
             console.log("here2")
             const cpu = req.body.cpu
@@ -187,18 +181,20 @@ module.exports = {
             [nome, preco, descricao,stock,empresa_id])
                 
             await pool.query('INSERT INTO computadores(cpu,produtos_produto_id) VALUES($1,$2)', [cpu, result.rows[0].produto_id])// insere nos computadores
-                    
-            return res.status(200).json({"status":200, "results":prod.rows[0].produto_id})
+            await pool.query('COMMIT')            
+            return res.status(200).json({status:200, results:prod.rows[0].produto_id})
              
-            } catch (error) {
-                throw error
-            }
+            
         }
         else{
            
-            return res.status(400).json({"status":400, "errors":"tipo de produto nao existe"})
+            return res.status(400).json({status:400,errors:"tipo de produto nao existe"})
         }
         
+    }catch(e){
+        await pool.query('ROLLBACK')
+        return res.return(500).send({status: 500, errors:e}) 
+    }
     },  
     update_product:async (req, res) =>{
 
