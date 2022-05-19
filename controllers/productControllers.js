@@ -8,7 +8,6 @@ const { database } = require("../credentials");
 module.exports = {
     cart: async (req, res) => {
         
-        const quantidade= req.body.quantidade
         const cart=req.body.cart
         const produto_id = req.body.produto_id
         const cupao_id = parseInt(req.body.cupao_id)
@@ -31,25 +30,32 @@ module.exports = {
         if (line.rows[0] === undefined){
             return res.status(400).json( {"status" :400 , "errors": "utilizador nao autorizado"})
         }
-        let max_order=await pool.query('SELECT max(cart_id) FROM cart')
-        if(max_order.rows[0].max == null){
-            order_id=1
-        }
-        else{
-            order_id=parseInt(max_order.rows[0].max)=+1
-        
+        console.log("here")
+        let max_order=await pool.query('SELECT max(order_id) FROM cart')
+            console.log("here1")
+            console.log(max_order.rows[0].max)
+            if(max_order.rows[0].max === null){
+                order_id=1
+            }
+            else{
+                console.log("here2")
+                order_id=parseInt(max_order.rows[0].max)+1
+            }
+            console.log(order_id)
+            console.log("here12")
         try {     
+            
             for (let i = 0; i < cart.length; i++) {
                 let line
                 let preco_total
-
+                console.log("here2")
                 //vai buscar o stock de um certo produto
-                line = await pool.query('select stock_produto from produtos where produto_id = $1',[cart[i][0]])
+                let quantidade = await pool.query('select stock_produto from produtos where produto_id = $1',[cart[i][0]])
                 
-                if (line.rows[0].stock_produto == 0) {
+                if (quantidade.rows[0].stock_produto === 0) {
                     throw new Error('Produto sem estoque')
                 }
-
+                console.log("here3")
                 //vai buscar todos o produto com o id recebido
                 line = await pool.query('select * from produtos where produto_id=$1',[cart[i][0]])
                 
@@ -59,11 +65,11 @@ module.exports = {
                     }
                     
                     else{
-
+                        console.log("x")
                         //vai buscar o preço dos produtos
                         let precos= await pool.query('select preco from produtos where produto_id=$1',[cart[i][0]])
                         preco_total =preco_total + (parseInt(precos.rows[0].preco) * cart[i][1])
-
+                        console.log("y")
                         //guarda a maior versao ja dada na versao atualiza para uma nova inserçao
                         let max_ver= await pool.query('select MAX(version) from versao_produto where produtos_produto_id=$1',[cart[i][0]])
                         
@@ -83,11 +89,12 @@ module.exports = {
                         const data = dia.toString() + '-' + mes.toString() + '-' + ano.toString()
                         
                         //insere a compra no carrinho e guarda a versao do produto
-                        
+                        console.log("z")
                         await pool.query('INSERT INTO versao_produto(nome,preco,stock,version,descricao,creation_date,produtos_produto_id) VALUES($1,$2,$3,$4,$5,$6,$7)',
                         [line.rows[0].nome,line.rows[0].preco,line.rows[0].stock_produto,version,line.rows[0].descricao,data,cart[i][0]])
-                        
-                        await pool.query('insert into cart(quantidade,order_id,produtos_produto_id,comprador_users_username) values ($1,$2,$3,$4)',[cart[i][1],order_id,cart[i][0],tokeninfo.username])
+                        console.log("xy")
+                        await pool.query('insert into cart(quantidade,order_id,produtos_produto_id,comprador_users_username,data) values ($1,$2,$3,$4,$5) returning(cart_id)',[cart[i][1],order_id,cart[i][0],tokeninfo.username,data])
+                        console.log("xz")
                         await pool.query('DELETE FROM subscricoes WHERE comprador_users_username = $1 AND cupao_id_cupao = $2', [tokeninfo.username,cupao_id])
                     }
                                     
@@ -97,17 +104,17 @@ module.exports = {
 
             }
             await pool.query('COMMIT')
-            return res.status(200).json({"status":200},{'order_id':order_id})
+            return res.status(200).json({"status":200,'order_id':order_id})
           } catch (e) {
             
-             console.log(e)
+            console.log(e)
           
         
             await pool.query('ROLLBACK')
             
             return res.status(400).json({"status":400,"errors":e.message})
             }
-        }
+        
     },
     
 
