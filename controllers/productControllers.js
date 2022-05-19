@@ -139,63 +139,64 @@ module.exports = {
             return res.status(400).json({"status": 400 , "errors": "utilizador nao autorizado"})
         }
         
-        await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)', [ nome, preco, descricao,stock,empresa_id])
+        let result= await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)', [ nome, preco, descricao,stock,empresa_id])
         
         if (type === "smartphone") {
             try {
+                await pool.query('BEGIN')
                 const marca = req.body.marca
                 if (marca === undefined) {
                     return res.status(400).json({ "status": 400, "errors": "marca nao definida" })
                 }
-                let result= await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)', [ nome, preco, descricao,stock,empresa_id])
                     
                 await pool.query('INSERT INTO smartphones(marca,produtos_produto_id) VALUES($1,$2)', [marca, result.rows[0].produto_id])
-                        
+                await pool.query('COMMIT')
                 return res.status(200).json({"status":200, "results":result.rows[0].produto_id})
   
                 
             } catch (error) {
+                await pool.quer('ROLLBACK')
                 throw error
             }
             
         }
         else if (type === "televisao") {
             try{
-                
+                await pool.query('BEGIN')
                 const dimensao = req.body.dimensao
                 if (dimensao === undefined) {
                     return res.status(400).json()
                 }
-                let result=await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (product_id)', [ nome, preco, descricao,stock,empresa_id])
                    
                 await pool.query('INSERT INTO televisoes(dimensao,produtos_produto_id ) VALUES($1,$2)', [dimensao,result.rows[0].produto_id])
+                await pool.query('COMMIT')
                 return res.status(200).json({"status":200, "results":result.rows[0].produto_id})
                 
             } catch (error) {
+                await pool.query('ROLLBACK')
                 throw error
             }
         }
         else if (type === "computador") {
             try{
-
+            await pool.query('BEGIN')
             console.log("here2")
             const cpu = req.body.cpu
             if (cpu === undefined) {
                 return res.status(400).json()
             }
-            let result = await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)',// insere produto
-            [nome, preco, descricao,stock,empresa_id])
+            
                 
             await pool.query('INSERT INTO computadores(cpu,produtos_produto_id) VALUES($1,$2)', [cpu, result.rows[0].produto_id])// insere nos computadores
-                    
+            await pool.query('COMMIT')
             return res.status(200).json({"status":200, "results":result.rows[0].produto_id})
              
             } catch (error) {
+                await pool.query('ROLLBACK')
                 throw error
             }
         }
         else{
-           
             return res.status(400).json({"status":400, "errors":"tipo de produto nao existe"})
         }
         
