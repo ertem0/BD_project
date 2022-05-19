@@ -1,14 +1,12 @@
 //imports
 //o ultimo empregado da minha familia
-const express = require("express")
+const express = require("express");
 const { Pool, Client } = require("pg");
 const credentials = require("./credentials.js");
 const bodyParser = require("body-parser");
-const pool = require("./connection")
+const pool = require("./connection");
 
-pool.connect()
-
-
+pool.connect();
 
 const app = express();
 
@@ -40,33 +38,29 @@ const app = express();
 
 app.use(bodyParser.json());
 
-const routes = require('./routes/routes.js'); 
+const routes = require("./routes/routes.js");
 
-app.use('/', routes);
+app.use("/", routes);
 
 //  404 ERROR
 app.use((req, res, next) => {
-    const err = new Error("Not found");
-    err.status = 404;
-    next(err);
+  const err = new Error("Not found");
+  err.status = 404;
+  next(err);
 });
 
 //CATCH OTHER ERRORS
 app.use((err, req, res, next) => {
-    const message = err;
-    const status = err.status || 500;
- 
-    res.status(status).json({
-        error: {
-            message:err.message
-        },
-    });
-});
+  const message = err;
+  const status = err.status || 500;
 
+  res.status(status).json({
+    error: {
+      message: err.message,
+    },
+  });
+});
 
 //start server
 const port = 5001;
 app.listen(port, () => console.log(`Server started on port ${port}`));
-
-
-

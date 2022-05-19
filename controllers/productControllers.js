@@ -8,9 +8,8 @@ const { database } = require("../credentials");
 module.exports = {
     cart: async (req, res) => {
         
-        const quantidade= req.body.quantidade
+        
         const cart=req.body.cart
-        const produto_id = req.body.produto_id
         const cupao_id = parseInt(req.body.cupao_id)
         const tokenheader = req.headers.authorization 
         var version
@@ -18,8 +17,7 @@ module.exports = {
         
         tokeninfo = jwt.verify(tokenheader, '123456')
         console.log(tokeninfo.username)
-        let line
-    
+
 
         //procura o nome do user do token na tabela de compradores para ver se é um comprador
         try {
@@ -31,39 +29,43 @@ module.exports = {
         if (line.rows[0] === undefined){
             return res.status(400).json( {"status" :400 , "errors": "utilizador nao autorizado"})
         }
+
         let max_order=await pool.query('SELECT max(cart_id) FROM cart')
+        
         if(max_order.rows[0].max == null){
             order_id=1
         }
+        
         else{
             order_id=parseInt(max_order.rows[0].max)=+1
-        
-        try {     
-            for (let i = 0; i < cart.length; i++) {
-                let line
-                let preco_total
-
-                //vai buscar o stock de um certo produto
-                line = await pool.query('select stock_produto from produtos where produto_id = $1',[cart[i][0]])
-                
-                if (line.rows[0].stock_produto == 0) {
-                    throw new Error('Produto sem estoque')
-                }
-
-                //vai buscar todos o produto com o id recebido
-                line = await pool.query('select * from produtos where produto_id=$1',[cart[i][0]])
-                
+        }   
+            try {     
+                await pool.query('BEGIN')
+                for (let i = 0; i < cart.length; i++) {
+                    let line
+                    let preco_total
+                    
+                    //vai buscar o stock de um certo produto
+                    line = await pool.query('select stock_produto from produtos where produto_id = $1',[cart[i][0]])
+                    
+                    if (line.rows[0].stock_produto == 0) {
+                        throw new Error('Produto sem estoque')
+                    }
+    
+                    //vai buscar todos o produto com o id recebido
+                    line = await pool.query('select * from produtos where produto_id=$1',[cart[i][0]])
+                    
                     if(line.rows[0] === undefined){
-                        
+                            
                         return res.status(400).json({"status":400 , "errors": "produto nao existe"})  
                     }
                     
                     else{
-
+                        
                         //vai buscar o preço dos produtos
                         let precos= await pool.query('select preco from produtos where produto_id=$1',[cart[i][0]])
                         preco_total =preco_total + (parseInt(precos.rows[0].preco) * cart[i][1])
-
+    
                         //guarda a maior versao ja dada na versao atualiza para uma nova inserçao
                         let max_ver= await pool.query('select MAX(version) from versao_produto where produtos_produto_id=$1',[cart[i][0]])
                         
@@ -88,26 +90,28 @@ module.exports = {
                         [line.rows[0].nome,line.rows[0].preco,line.rows[0].stock_produto,version,line.rows[0].descricao,data,cart[i][0]])
                         
                         await pool.query('insert into cart(quantidade,order_id,produtos_produto_id,comprador_users_username) values ($1,$2,$3,$4)',[cart[i][1],order_id,cart[i][0],tokeninfo.username])
+                        
                         await pool.query('DELETE FROM subscricoes WHERE comprador_users_username = $1 AND cupao_id_cupao = $2', [tokeninfo.username,cupao_id])
+                        
                     }
-                                    
+                                        
+                    
+                    await pool.query('update produtos set stock_produto = stock_produto - $1 where produto_id = $2;',[cart[i][1],cart[i][0]])
+                    
+    
+                }
+                await pool.query('COMMIT')
+                return res.status(200).json({"status":200},{'order_id':order_id})
+              } catch (e) {
                 
-                await pool.query('update produtos set stock_produto = stock_produto - $1 where produto_id = $2;',[cart[i][1],cart[i][0]])
-                
-
-            }
-            await pool.query('COMMIT')
-            return res.status(200).json({"status":200},{'order_id':order_id})
-          } catch (e) {
+                 console.log(e)
+              
             
-             console.log(e)
-          
+                await pool.query('ROLLBACK')
+                
+                return res.status(400).json({"status":400,"errors":e.message})
+            }
         
-            await pool.query('ROLLBACK')
-            
-            return res.status(400).json({"status":400,"errors":e.message})
-            }
-        }
     },
     
 
