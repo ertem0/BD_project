@@ -12,8 +12,9 @@ module.exports = {
         const cart=req.body.cart
         const produto_id = req.body.produto_id
         const cupao_id = parseInt(req.body.cupao_id)
-        var version
         const tokenheader = req.headers.authorization 
+        var version
+        var order_id
         
         tokeninfo = jwt.verify(tokenheader, '123456')
         console.log(tokeninfo.username)
@@ -33,7 +34,13 @@ module.exports = {
         
         try {
             await pool.query('BEGIN')
-            
+            let check_order= await pool.query('select MAX(order_id) from cart')
+            if(check_order.rows[0].max === null){
+                order_id=1
+            }
+            else{
+                order_id= parseInt(check_order.rows[0].max)+1
+            }
             for (let i = 0; i < cart.length; i++) {
                 let line
                 let preco_total
@@ -56,19 +63,19 @@ module.exports = {
                     else{
 
                         //vai buscar o preço dos produtos
-                        let line3= await pool.query('select preco from produtos where produto_id=$1',[cart[i][0]])
-                        preco_total =preco_total + (parseInt(line3.rows[0].preco) * cart[i][1])
+                        let precos= await pool.query('select preco from produtos where produto_id=$1',[cart[i][0]])
+                        preco_total =preco_total + (parseInt(precos.rows[0].preco) * cart[i][1])
 
                         //guarda a maior versao ja dada na versao atualiza para uma nova inserçao
-                        let line2= await pool.query('select MAX(version) from versao_produto where produtos_produto_id=$1',[cart[i][0]])
+                        let max_ver= await pool.query('select MAX(version) from versao_produto where produtos_produto_id=$1',[cart[i][0]])
                         
-                        if(line2.rows[0] === undefined){
+                        if(max_ver.rows[0].max === null){
                             version = 1
                             
                         }    
                         else{
                             
-                            version = 1 + parseInt(line2.rows[0].max) 
+                            version = 1 + parseInt(max_ver.rows[0].max) 
                         }    
                         //guarda a data de hoje
                         let date = new Date()
@@ -78,8 +85,11 @@ module.exports = {
                         const data = dia.toString() + '-' + mes.toString() + '-' + ano.toString()
                         
                         //insere a compra no carrinho e guarda a versao do produto
-                        await pool.query('INSERT INTO versao_produto(nome,preco,stock,version,descricao,creation_date,produtos_produto_id) VALUES($1,$2,$3,$4,$5,$6,$7)',[line.rows[0].nome,line.rows[0].preco,line.rows[0].stock_produto,version,line.rows[0].descricao,data,cart[i][0]])
-                        await pool.query('insert into cart(quantidade,produtos_produto_id,comprador_users_username) values ($1,$2,$3)',[cart[i][1],cart[i][0],tokeninfo.username])
+                        
+                        await pool.query('INSERT INTO versao_produto(nome,preco,stock,version,descricao,creation_date,produtos_produto_id) VALUES($1,$2,$3,$4,$5,$6,$7)',
+                        [line.rows[0].nome,line.rows[0].preco,line.rows[0].stock_produto,version,line.rows[0].descricao,data,cart[i][0]])
+                        
+                        await pool.query('insert into cart(quantidade,order_id,produtos_produto_id,comprador_users_username) values ($1,$2,$3,$4)',[cart[i][1],order_id,cart[i][0],tokeninfo.username])
                         await pool.query('DELETE FROM subscricoes WHERE comprador_users_username = $1 AND cupao_id_cupao = $2', [tokeninfo.username,cupao_id])
                     }
                                     
@@ -145,7 +155,7 @@ module.exports = {
                 await pool.query('INSERT INTO smartphones(marca,produtos_produto_id) VALUES($1,$2)', [marca, produto_id])
                         
                 return res.status(200).json({ response: "produto criado" })
-                    
+  
                 
             } catch (error) {
                 throw error
