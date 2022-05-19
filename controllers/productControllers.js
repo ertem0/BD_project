@@ -204,7 +204,7 @@ module.exports = {
         
     },  
     update_product:async (req, res) =>{
-        const produto_id = req.param.produto_id
+        const produto_id = req.params.produto_id
         console.log(produto_id)
         const nome = req.body.nome
         const descricao = req.body.descricao
@@ -264,7 +264,7 @@ module.exports = {
             await pool.query('UPDATE produtos SET nome=$1,preco=$2,descricao=$3,stock_produto=$4 WHERE produto_id=$5', [nome,preco,descricao,stock,produto_id])// da update ao produto
             return res.status(200).json({ "status":200})
         } catch (error) {
-            throw error
+            return res.status(400).json({"status":400, "errors":error})
         }
-    }
+    },
 }
