@@ -269,4 +269,10 @@ module.exports = {
             return res.status(400).json({"status":400, "errors":error})
         }
     },
+    info: async(req, res)=>{
+
+        const id = req.params.produto_id
+        return res.status(200).send({result: id})
+
+    }
 }

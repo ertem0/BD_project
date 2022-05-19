@@ -18,7 +18,10 @@ router.route("/subscribe/:campanha_id").put(cupoes.subscribe);
 router
   .route("/product/:produto_id")
   
-  .put(productcontrollers.update_product);
+  .put(productcontrollers.update_product)
+  
 
 router.route("/product").post(productcontrollers.criar_novo_produto)
+router.route("/product/:produto_id").get(productcontrollers.info)
+
 module.exports = router;
