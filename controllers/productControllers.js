@@ -19,6 +19,7 @@ module.exports = {
         tokeninfo = jwt.verify(tokenheader, '123456')
         console.log(tokeninfo.username)
         let line
+    
 
         //procura o nome do user do token na tabela de compradores para ver se é um comprador
         try {
@@ -28,9 +29,14 @@ module.exports = {
             throw(error)
         }
         if (line.rows[0] === undefined){
-            return res.status(401).json({response: "nao autorizado"})
+            return res.status(400).json( {"status" :400 , "errors": "utilizador nao autorizado"})
         }
-        
+        let max_order=await pool.query('SELECT max(cart_id) FROM cart')
+        if(max_order.rows[0].max == null){
+            order_id=1
+        }
+        else{
+            order_id=parseInt(max_order.rows[0].max)=+1
         
         try {     
             for (let i = 0; i < cart.length; i++) {
@@ -49,7 +55,7 @@ module.exports = {
                 
                     if(line.rows[0] === undefined){
                         
-                        return res.status(200).json({response: "produto nao existe"})  
+                        return res.status(400).json({"status":400 , "errors": "produto nao existe"})  
                     }
                     
                     else{
@@ -91,15 +97,19 @@ module.exports = {
 
             }
             await pool.query('COMMIT')
-            
+            return res.status(200).json({"status":200},{'order_id':order_id})
           } catch (e) {
             
              console.log(e)
-          } finally{
-              return res.status(200).json({"status":"ok"})
-          }
+          
         
+            await pool.query('ROLLBACK')
+            
+            return res.status(400).json({"status":400,"errors":e.message})
+            }
+        }
     },
+    
 
     criar_novo_produto: async (req, res) => {
         const type = req.body.type
@@ -110,6 +120,7 @@ module.exports = {
         const stock = req.body.stock
         const tokenheader = req.headers.authorization 
         
+
         tokeninfo = jwt.verify(tokenheader, '123456')
         console.log(tokeninfo.username)
         let line
@@ -120,7 +131,7 @@ module.exports = {
             throw(error)
         }
         if (line.rows[0] === undefined){
-            return res.status(401).send()
+            return res.status(400).json({"status": 400 , "errors": "utilizador nao autorizado"})
         }
         console.log(line)  
         
@@ -128,13 +139,13 @@ module.exports = {
             try {
                 const marca = req.body.marca
                 if (marca === undefined) {
-                    return res.status(200).json({ response: "marca nao definida" })
+                    return res.status(400).json({ "status": 400, "errors": "marca nao definida" })
                 }
-                await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)', [ nome, preco, descricao,stock,empresa_id])
+                let result= await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)', [ nome, preco, descricao,stock,empresa_id])
                     
-                await pool.query('INSERT INTO smartphones(marca,produtos_produto_id) VALUES($1,$2)', [marca, produto_id])
+                await pool.query('INSERT INTO smartphones(marca,produtos_produto_id) VALUES($1,$2)', [marca, result.rows[0].produto_id])
                         
-                return res.status(200).json({ response: "produto criado" })
+                return res.status(200).json({"status":200, "results":result.rows[0].produto_id})
   
                 
             } catch (error) {
@@ -147,12 +158,12 @@ module.exports = {
                 console.log("here")
                 const dimensao = req.body.dimensao
                 if (dimensao === undefined) {
-                    return res.status(200).json({ response: "dimensao nao definida" })
+                    return res.status(400).json()
                 }
                 let result=await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (product_id)', [ nome, preco, descricao,stock,empresa_id])
                    
-                await pool.query('INSERT INTO televisoes(dimensao,produtos_produto_id ) VALUES($1,$2)', [dimensao,produto_id])
-                return res.status(200).json({ response: "produto criado" })
+                await pool.query('INSERT INTO televisoes(dimensao,produtos_produto_id ) VALUES($1,$2)', [dimensao,result.rows[0].produto_id])
+                return res.status(200).json({"status":200, "results":result.rows[0].produto_id})
                 
             } catch (error) {
                 throw error
@@ -164,14 +175,14 @@ module.exports = {
             console.log("here2")
             const cpu = req.body.cpu
             if (cpu === undefined) {
-                return res.status(200).json({ response: "cpu nao definida" })
+                return res.status(400).json()
             }
-            await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)',// insere produto
-            [produto_id, nome, preco, descricao,stock,empresa_id])
+            let result = await pool.query('INSERT INTO produtos (nome,preco, descricao,stock_produto,empresas_empresa_id) VALUES ($1, $2, $3, $4,$5) RETURNING (produto_id)',// insere produto
+            [nome, preco, descricao,stock,empresa_id])
                 
-            await pool.query('INSERT INTO computadores(cpu,produtos_produto_id) VALUES($1,$2)', [cpu, produto_id])// insere nos computadores
+            await pool.query('INSERT INTO computadores(cpu,produtos_produto_id) VALUES($1,$2)', [cpu, result.rows[0].produto_id])// insere nos computadores
                     
-            return res.status(200).send({ response: "produto criado" })
+            return res.status(200).json({"status":200, "results":prod.rows[0].produto_id})
              
             } catch (error) {
                 throw error
@@ -179,7 +190,7 @@ module.exports = {
         }
         else{
            
-            return res.status(500).json({ response: "tipo de produto nao existe" })
+            return res.status(400).json({"status":400, "errors":"tipo de produto nao existe"})
         }
         
     },  
@@ -202,14 +213,14 @@ module.exports = {
             throw(error)
         }
         if (line.rows[0] === undefined){
-            return res.status(401).send()
+            return res.status(400).json({"status": 400 , "errors": "utilizador nao autorizado"})
         }
       
         try {      
             let result= await pool.query('SELECT produto_id FROM produtos WHERE produto_id= $1 ', [produto_id] )// verifica se o produto existe
          
             if (result.rows[0] === undefined) {  
-                return res.status(200).json({ response: "produto nao existente" })
+                return res.status(400).json({"status":400, "errors":"produto nao existe"})
             }
         } catch (error) {
             throw(error)
@@ -242,7 +253,7 @@ module.exports = {
             [produto.rows[0].nome,parseInt(produto.rows[0].preco),parseInt(produto.rows[0].stock_produto),version,produto.rows[0].descricao,data,produto_id])
             
             await pool.query('UPDATE produtos SET nome=$1,preco=$2,descricao=$3,stock_produto=$4 WHERE produto_id=$5', [nome,preco,descricao,stock,produto_id])// da update ao produto
-            return res.status(200).json({ response: "produto atualizado" })
+            return res.status(200).json({ "status":200})
         } catch (error) {
             throw error
         }

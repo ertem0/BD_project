@@ -14,7 +14,7 @@ router.route('/rating/:prod_id').post(qandrcontrollers.add_rating);
 router.route('/campaign').post(cupoes.createCampanha)
 router.route('/cart').post(productcontrollers.cart);
 router.route('/subscribe/:campanha_id').put(cupoes.subscribe)
-router.route('/product').post(productcontrollers.criar_novo_produto).put(productcontrollers.update_product);
+router.route('/product/:produto_id').post(productcontrollers.criar_novo_produto).put(productcontrollers.update_product);
 
 module.exports = router;
 
