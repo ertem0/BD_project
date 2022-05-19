@@ -10,14 +10,15 @@ module.exports = {
         const autherization= req.headers.authorization;
         const user = jwt.verify(autherization, '123456').username
         console.log(prod_id, question, user)
-        pool.query('INSERT INTO perguntas (produtos_produto_id, pergunta, users_username) VALUES ($1, $2, $3) RETURNING (pergunta_id)', [prod_id, question, user] , (error, result)=>{
-                
-                if (error) {
-                    throw error
-                    return res.status(500).json({err: error})
-                }
-                return res.status(200).json({status: 200, results: result.rows[0]["pergunta_id"]})
-            })
+        try{
+            let result = await pool.query('INSERT INTO perguntas (produtos_produto_id, pergunta, users_username) VALUES ($1, $2, $3) RETURNING (pergunta_id)', [prod_id, question, user] )
+            await pool.query('COMMIT')   
+            return res.status(200).json({status: 200, results: result.rows[0]["pergunta_id"]})
+            
+        }catch(error){
+            return res.status(500).json({err: error})
+        }
+        
     },
 
     create_response: async(req, res)=>{

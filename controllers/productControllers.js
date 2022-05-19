@@ -32,7 +32,7 @@ module.exports = {
         
         
         try {
-            await pool.query('BEGIN')
+            
             
             for (let i = 0; i < cart.length; i++) {
                 let line
@@ -91,7 +91,7 @@ module.exports = {
             await pool.query('COMMIT')
             
           } catch (e) {
-            await pool.query('ROLLBACK')
+            
              console.log(e)
           } finally{
               return res.status(200).json({"status":"ok"})

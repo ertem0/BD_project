@@ -15,56 +15,31 @@ module.exports = {
         const validade = parseInt(req.body.validade)
         const tokenheader = req.headers.authorization
         
-      
-        var id_cupao = 0
         tokeninfo = jwt.verify(tokenheader, '123456')
         
         try{
-            await pool.query('BEGIN')
-
-            //verifica se o usuario e admin
+        //verifica se o usuario e admin
             let result =await pool.query('SELECT users_username FROM administrador where users_username = $1',[tokeninfo.username])
             if(result.rows[0] === undefined){
                 return res.status(500).send({resultado: "user is not admin"})
             }
 
-  
-
-            //buscar o id da ultima campanha
-            result = await pool.query('SELECT MAX(campanha_id) FROM campanha') 
-                
-            if(result.rows[0].max === null){
-                id_campanha = 1
-            }
-            else{
-                id_campanha = 1 + parseInt(result.rows[0].max)
-            }
             //inserir a campanha
-            await pool.query('INSERT INTO campanha (campanha_id, inicio, fim, description, stock, produtos_produto_id, administrador_users_username) VALUES($1,$2,$3,$4,$5,$6,$7)',
-                [id_campanha, start, end, description, stock, produto_id, tokeninfo.username])
-            //buscar o id do ultimo cupao
-            result = await pool.query('SELECT MAX(id_cupao) FROM cupao') 
-
-            if(result.rows[0].max === null){
-                id_cupao = 1
-            }
-            else{
-                id_cupao = 1 + parseInt(result.rows[0].max)
-            }
+            result = await pool.query('INSERT INTO campanha (inicio, fim, description, stock, produtos_produto_id, administrador_users_username) VALUES($1,$2,$3,$4,$5,$6) RETURNING (campanha_id)',
+                [start, end, description, stock, produto_id, tokeninfo.username])
+            console.log("campanha_id")
             //inserir o cupao
-            await pool.query('INSERT INTO cupao (campanha_campanha_id, desconto, id_cupao, validade) VALUES ($1, $2, $3, $4)', [id_campanha, desconto, id_cupao, validade])
+            await pool.query('INSERT INTO cupao (campanha_campanha_id, desconto, validade) VALUES ($1, $2, $3)', [id_campanha, desconto, validade])
+
             pool.query("COMMIT")
 
-            return res.status(200).send({resultado: "campanha created"})
-            
+            return res.status(200).send({resultado: "campanha created"})        
         }
         catch (e){
-            pool.query('ROLLBACK')
+            
             throw e
         }
-        
-
-        
+   
     },
 
     subscribe: async(req, res)=>{
@@ -83,10 +58,7 @@ module.exports = {
         const tokenheader = req.headers.authorization
         tokeninfo = jwt.verify(tokenheader, '123456')
 
-        
-        
-       
-
+ 
         //procura o nome do user do token na tabela de compradores para ver se é um comprador
         try {
             line = await pool.query('SELECT users_username FROM comprador WHERE users_username = $1',[tokeninfo.username])
