@@ -92,7 +92,7 @@ module.exports = {
                         
                         await pool.query('INSERT INTO versao_produto(nome,preco,stock,version,descricao,creation_date,produtos_produto_id) VALUES($1,$2,$3,$4,$5,$6,$7)',
                         [line.rows[0].nome,line.rows[0].preco,line.rows[0].stock_produto,version,line.rows[0].descricao,data,cart[i][0]])
-                        
+                        console.log(cart[i][1],order_id,cart[i][0],tokeninfo.username,data)
                         await pool.query('insert into cart (quantidade,order_id,produtos_produto_id,comprador_users_username,data) values ($1,$2,$3,$4,$5)',[cart[i][1],order_id,cart[i][0],tokeninfo.username,data])
                         
                         await pool.query('DELETE FROM subscricoes WHERE comprador_users_username = $1 AND cupao_id_cupao = $2', [tokeninfo.username,cupao_id])
@@ -273,13 +273,12 @@ module.exports = {
     },
     info: async(req, res)=>{
         
-        
-            
+        try{
+            console.log(1)
             const id = req.params.produto_id
             var prices = []
             
             let result =await pool.query('select  nome, preco, descricao, stock_produto, (select array_agg (preco) from versao_produto where produtos_produto_id = $1) versao ,(select AVG(rating) from ratings where produtos_produto_id = $1) rating_avg, (select array_agg(comentario) from ratings where produtos_produto_id = $1)comentarios , (select array_agg(creation_date) from versao_produto where produtos_produto_id = $1) datas from produtos where produto_id= $1', [id])
-            
             const preco_atual = result.rows[0].preco
             const precos_versoes = result.rows[0].versao
             const rating_avg = result.rows[0].rating_avg
@@ -288,7 +287,7 @@ module.exports = {
             const stock = result.rows[0].stock_produto
             const nome = result.rows[0].nome
             const datas_versao = result.rows[0].datas
-            console.log(preco_atual, precos_versoes, rating_avg, descricao, comentarios, stock, nome, datas_versao)
+            
             let date = new Date()
             const dia = date.getDate()
             const mes = date.getMonth() + 1
@@ -305,7 +304,10 @@ module.exports = {
             console.log({status: 200, result: {nome: nome, stock: stock, descricao: descricao, prices: prices, ratings: rating_avg, comentarios: comentarios}})
             return res.status(200).send({status: 200, result: {nome: nome, stock: stock, descricao: descricao, prices: prices, ratings: rating_avg, comentarios: comentarios}})
                         
-        
+        }
+        catch(e){
+            return res.status(400).send({status: 400, errors: e})
+        }
 
     }
 }
