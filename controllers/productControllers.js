@@ -16,12 +16,13 @@ module.exports = {
         var order_id
         
         tokeninfo = jwt.verify(tokenheader, '123456')
-        console.log(tokeninfo.username)
+       
 
 
         //procura o nome do user do token na tabela de compradores para ver se é um comprador
         try {
             line = await pool.query('SELECT users_username FROM comprador WHERE users_username = $1',[tokeninfo.username])
+            
             
         } catch (error) {
             throw(error)
@@ -31,8 +32,8 @@ module.exports = {
         }
         
         let max_order=await pool.query('SELECT max(order_id) FROM cart')
-            console.log("here1")
-            console.log(max_order.rows[0].max)
+            
+            
             if(max_order.rows[0].max === null){
                 order_id=1
             }
@@ -40,13 +41,13 @@ module.exports = {
                 
                 order_id=parseInt(max_order.rows[0].max)+1
             }
-           
+            
         try {     
             await pool.query('BEGIN')
             for (let i = 0; i < cart.length; i++) {
                 let line
                 let preco_total
-                
+                  
                 //vai buscar o stock de um certo produto
                 let quantidade = await pool.query('select stock_produto from produtos where produto_id = $1',[cart[i][0]])
                 
@@ -66,6 +67,7 @@ module.exports = {
                         
                         //vai buscar o preço dos produtos
                         let precos= await pool.query('select preco from produtos where produto_id=$1',[cart[i][0]])
+                        
                         preco_total =preco_total + (parseInt(precos.rows[0].preco) * cart[i][1])
     
                         //guarda a maior versao ja dada na versao atualiza para uma nova inserçao
@@ -91,7 +93,7 @@ module.exports = {
                         await pool.query('INSERT INTO versao_produto(nome,preco,stock,version,descricao,creation_date,produtos_produto_id) VALUES($1,$2,$3,$4,$5,$6,$7)',
                         [line.rows[0].nome,line.rows[0].preco,line.rows[0].stock_produto,version,line.rows[0].descricao,data,cart[i][0]])
                         
-                        await pool.query('insert into cart(quantidade,order_id,produtos_produto_id,comprador_users_username,data) values ($1,$2,$3,$4,$5)',[cart[i][1],order_id,cart[i][0],tokeninfo.username,data])
+                        await pool.query('insert into cart (quantidade,order_id,produtos_produto_id,comprador_users_username,data) values ($1,$2,$3,$4,$5)',[cart[i][1],order_id,cart[i][0],tokeninfo.username,data])
                         
                         await pool.query('DELETE FROM subscricoes WHERE comprador_users_username = $1 AND cupao_id_cupao = $2', [tokeninfo.username,cupao_id])
                         
@@ -180,7 +182,7 @@ module.exports = {
         else if (type === "computador") {
             try{
             await pool.query('BEGIN')
-            console.log("here2")
+            
             const cpu = req.body.cpu
             if (cpu === undefined) {
                 return res.status(400).json()
@@ -244,7 +246,7 @@ module.exports = {
             else{//se tiver versao acrescenta 1 a versao anterior
                 
                 version = 1 + parseInt(line2.rows[0].max) 
-                console.log(version)
+                
             }    
             let date = new Date()
             const dia = date.getDate()

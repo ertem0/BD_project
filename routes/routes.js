@@ -14,7 +14,7 @@ router
 router.route("/dbproj/rating/:prod_id").post(qandrcontrollers.add_rating);
 router.route("/dbproj/campaign").post(cupoes.createCampanha);
 router.route("/dbproj/order").post(productcontrollers.cart);
-router.route("/subscribe/:campanha_id").put(cupoes.subscribe);
+router.route("/dbproj/subscribe/:campanha_id").put(cupoes.subscribe);
 router
   .route("/dbproj/product/:produto_id")
   
