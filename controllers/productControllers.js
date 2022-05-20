@@ -272,10 +272,14 @@ module.exports = {
         }
     },
     info: async(req, res)=>{
-        try{
+        
+        
+            
             const id = req.params.produto_id
             var prices = []
-            let result =await pool.query('select  nome, preco, descricao, stock_produto, (select array_agg (preco) from versao_produto where produtos_produto_id = $1) versao ,(select AVG(rating) from ratings where produtos_produto_id = $1) rating_avg, (select array_agg(comentario) from ratings where produtos_produto_id = $1)comentarios , (select array_agg(data) from cart) datas from produtos where produto_id= $1', [id])
+            
+            let result =await pool.query('select  nome, preco, descricao, stock_produto, (select array_agg (preco) from versao_produto where produtos_produto_id = $1) versao ,(select AVG(rating) from ratings where produtos_produto_id = $1) rating_avg, (select array_agg(comentario) from ratings where produtos_produto_id = $1)comentarios , (select array_agg(creation_date) from versao_produto where produtos_produto_id = $1) datas from produtos where produto_id= $1', [id])
+            
             const preco_atual = result.rows[0].preco
             const precos_versoes = result.rows[0].versao
             const rating_avg = result.rows[0].rating_avg
@@ -284,7 +288,7 @@ module.exports = {
             const stock = result.rows[0].stock_produto
             const nome = result.rows[0].nome
             const datas_versao = result.rows[0].datas
-            
+            console.log(preco_atual, precos_versoes, rating_avg, descricao, comentarios, stock, nome, datas_versao)
             let date = new Date()
             const dia = date.getDate()
             const mes = date.getMonth() + 1
@@ -298,13 +302,10 @@ module.exports = {
                 const string = precos_versoes[i] + ' - ' + datas_versao[i]
                 prices.push(string)
             }
-            
+            console.log({status: 200, result: {nome: nome, stock: stock, descricao: descricao, prices: prices, ratings: rating_avg, comentarios: comentarios}})
             return res.status(200).send({status: 200, result: {nome: nome, stock: stock, descricao: descricao, prices: prices, ratings: rating_avg, comentarios: comentarios}})
                         
-        }
-        catch(e){
-            return res.status(400).send({status: 400, errors: e})
-        }
+        
 
     }
 }
