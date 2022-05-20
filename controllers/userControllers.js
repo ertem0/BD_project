@@ -42,16 +42,18 @@ module.exports = {
     const tokenheader = req.headers.authorization;
     //supostamente devia decodificar o token mas nao funciona
     let tokeninfo = { username: undefined };
+
     if (tokenheader !== undefined) {
       tokeninfo = jwt.verify(tokenheader, "123456");
     }
+    
     try {
       await pool.query("BEGIN");
       let result = await pool.query(
         "SELECT users_username FROM administrador WHERE users_username = $1",
         [tokeninfo.username]
       );
-
+      
       if (
         result.rows[0] === undefined &&
         (type === "administrador" || type === "vendedor")
@@ -64,15 +66,21 @@ module.exports = {
         "SELECT username FROM users WHERE username = $1",
         [nome]
       );
-
+      if(result.rows[0] != undefined){
+        return res.status(500).json({
+          status: 500,
+          errors: "user already exists"
+        });
+      }
       //check if the return of the select query is empty
       if (result.rows[0] == undefined) {
         //add user in the users table
+        
         await pool.query(
           "INSERT INTO users (username, password, email) VALUES ($1, $2, $3)",
           [nome, pass, email]
         );
-
+        
         if (type === "comprador") {
           // get the values for the comprador
           const morada = req.body.morada;
@@ -91,9 +99,10 @@ module.exports = {
             username: nome,
           });
         }
-
+        
         //add a new vendedor to vendedor table
         if (type === "vendedor") {
+          
           const morada = req.body.morada;
           const NIF = parseInt(req.body.nif);
 
